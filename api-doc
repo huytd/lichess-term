@@ -1,0 +1,70 @@
+
+	_     _      _                     _____
+	| |   (_)    | |                   |_   _|
+	| |    _  ___| |__   ___  ___ ___    | | ___ _ __ _ __ ___
+	| |   | |/ __| '_ \ / _ \/ __/ __|   | |/ _ \ '__| '_ ` _ \
+	| |___| | (__| | | |  __/\__ \__ \   | |  __/ |  | | | | | |
+	\_____/_|\___|_| |_|\___||___/___/   \_/\___|_|  |_| |_| |_|
+
+
+--------------
+I. UI Building
+--------------
+
+- [x] Render the chessboard
+- [x] Build the input box
+  Gotta limit it to 6 chars only
+- [x] Fix the cursor bug
+  Currently, there's a rogue cursor on the bottom right of
+  the chessboard, not sure why.
+- [x] Render player's information
+
+- [ ] Render and control clock timer
+
+
+--------------------
+II. API Intergration
+--------------------
+
+1. First start
+
+   Subscribe to `/api/stream/event`
+   To get all game events like (gameStart, gameFinish)
+
+
+2. Create a game
+
+   Call `/api/challenge/ai`
+   To challenge an AI for a game
+
+3. AI accepted the challenge
+
+   gameStart event will be received, with the payload of:
+
+
+    {
+    	color: 	<player's color>,
+    	fen: 	<initial boars state>,
+    	gameId: <id of the game>,
+    	...
+    }
+
+4. Listen to board events
+
+   Subscribe to `/api/board/game/stream/{gameId}`
+
+   For every move/updates, the gameState event will be received, with the payload of:
+
+    {
+    	type: 				"gameState",
+    	moves: 				<list of UCI formatted moves>,
+    	wtime and btime: 	<remaining time of white and black>,
+    	winc and binc: 		<increased time after each move>
+    }
+
+5. Make a move
+
+   With `/api/board/game/{gameId}/move/{move}` call
+
+   After this move, the gameState event will be received
+   from the server, so we can render.
