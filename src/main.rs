@@ -2,9 +2,9 @@ mod ui;
 mod types;
 mod constants;
 
-use constants::{BOARD_POSITION_Y, BOARD_POSITION_X, MAX_INPUT_BUFFER_SIZE};
-use owlchess::{board::Board, Coord};
-use pancurses::{Input, Window};
+use constants::{BOARD_POSITION_Y, BOARD_POSITION_X, MAX_INPUT_BUFFER_SIZE, THEME_BOARD_HINT, THEME_BOARD_CELL_WHITE_WHITE_PIECE, THEME_BOARD_CELL_WHITE_BLACK_PIECE, THEME_BOARD_CELL_BLACK_WHITE_PIECE, THEME_BOARD_CELL_BLACK_BLACK_PIECE, THEME_BOARD_TEXT_BLACK, THEME_BOARD_TEXT_WHITE};
+use owlchess::{board::Board, Coord, Color};
+use pancurses::{Input, Window, init_pair, COLOR_BLUE, COLOR_PAIR, COLOR_WHITE, COLOR_BLACK, COLOR_YELLOW, COLOR_RED};
 use types::{BoardColor, Player};
 use ui::{run, App};
 
@@ -31,12 +31,13 @@ impl LichessApp {
     }
 
     fn draw_board(&self, win: &Window, board: &Board, player_side: BoardColor) {
+        // Board hint
+        win.attrset(COLOR_PAIR(THEME_BOARD_HINT));
         if player_side == BoardColor::White {
             win.mvprintw(BOARD_POSITION_Y + 8, BOARD_POSITION_X, "a b c d e f g h");
         } else {
             win.mvprintw(BOARD_POSITION_Y + 8, BOARD_POSITION_X, "h g f e d c b a");
         }
-
         for i in 0..8 {
             let rank = if player_side == BoardColor::White {
                 8 - i
@@ -46,39 +47,75 @@ impl LichessApp {
             win.mvprintw(i + BOARD_POSITION_Y, BOARD_POSITION_X - 2, format!("{}", rank));
         }
 
+        // Pieces
         for ry in 0..8 {
             for x in 0..8 {
+                let is_white_cell = if ry % 2 == 0 {
+                    x % 2 == 0
+                } else {
+                    x % 2 != 0
+                };
+
                 let mut y = ry;
                 if player_side == BoardColor::Black {
                     y = 8 - ry - 1;
                 }
                 let i = (y * 8 + x) as usize;
+
+                let cell = board.get(Coord::from_index(i));
+                let cell_str = format!("{} ", if cell.is_occupied() { cell.as_utf8_char() } else { ' ' });
+
+                let piece_color = cell.color().unwrap_or(Color::White);
+
+                if is_white_cell {
+                    if piece_color == Color::White {
+                        win.attrset(COLOR_PAIR(THEME_BOARD_CELL_WHITE_WHITE_PIECE));
+                    } else {
+                        win.attrset(COLOR_PAIR(THEME_BOARD_CELL_WHITE_BLACK_PIECE));
+                    }
+                } else {
+                    if piece_color == Color::White {
+                        win.attrset(COLOR_PAIR(THEME_BOARD_CELL_BLACK_WHITE_PIECE));
+                    } else {
+                        win.attrset(COLOR_PAIR(THEME_BOARD_CELL_BLACK_BLACK_PIECE));
+                    }
+                };
+
                 win.mvprintw(
                     ry + BOARD_POSITION_Y,
                     x * 2 + BOARD_POSITION_X,
-                    board.get(Coord::from_index(i)).as_utf8_char().to_string(),
+                    cell_str
                 );
             }
         }
     }
 
     fn draw_player_info(&self, win: &Window, player_w: &Player, player_b: &Player) {
-        win.mv(BOARD_POSITION_Y, BOARD_POSITION_X + 16);
-        win.vline('|', 9);
-
         let title_w = player_w.title.as_deref().unwrap_or("");
         let title_b = player_b.title.as_deref().unwrap_or("");
 
+        win.attrset(COLOR_PAIR(THEME_BOARD_TEXT_WHITE));
         win.mv(BOARD_POSITION_Y, BOARD_POSITION_X + 18);
         win.printw(format!("● {} {} ({})", &title_w, player_w.name, player_w.rate));
 
-        win.mv(BOARD_POSITION_Y + 8, BOARD_POSITION_X + 18);
+        win.attrset(COLOR_PAIR(THEME_BOARD_TEXT_BLACK));
+        win.mv(BOARD_POSITION_Y + 7, BOARD_POSITION_X + 18);
         win.printw(format!("● {} {} ({})", &title_b, player_b.name, player_b.rate));
     }
 }
 
 impl App for LichessApp {
     fn init(&mut self, win: &Window) {
+        init_pair(THEME_BOARD_HINT as i16, COLOR_BLUE, -1);
+        init_pair(THEME_BOARD_TEXT_WHITE as i16, COLOR_WHITE, -1);
+        init_pair(THEME_BOARD_TEXT_BLACK as i16, COLOR_BLACK, -1);
+
+        init_pair(THEME_BOARD_CELL_WHITE_WHITE_PIECE as i16, COLOR_YELLOW, COLOR_WHITE);
+        init_pair(THEME_BOARD_CELL_WHITE_BLACK_PIECE as i16, COLOR_RED, COLOR_WHITE);
+
+        init_pair(THEME_BOARD_CELL_BLACK_WHITE_PIECE as i16, COLOR_YELLOW, COLOR_BLACK);
+        init_pair(THEME_BOARD_CELL_BLACK_BLACK_PIECE as i16, COLOR_RED, COLOR_BLACK);
+
         self.input_win = win.subwin(3, 20, 12, 0).ok();
     }
 

@@ -1,4 +1,4 @@
-use pancurses::{endwin, half_delay, initscr, noecho, raw, Input, Window, curs_set};
+use pancurses::{endwin, half_delay, initscr, noecho, raw, Input, Window, curs_set, has_colors, start_color, use_default_colors};
 
 pub trait App {
     fn init(&mut self, win: &Window);
@@ -18,6 +18,11 @@ pub fn run(app: impl App, raw_mode: bool) {
     noecho();
     window.nodelay(true);
     window.keypad(true);
+
+    if has_colors() {
+        start_color();
+        use_default_colors();
+    }
 
     app.init(&window);
 

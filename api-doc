@@ -11,6 +11,7 @@
 I. UI Building
 --------------
 
+**DONE:**
 - [x] Render the chessboard
 - [x] Build the input box
   Gotta limit it to 6 chars only
@@ -18,8 +19,13 @@ I. UI Building
   Currently, there's a rogue cursor on the bottom right of
   the chessboard, not sure why.
 - [x] Render player's information
+- [x] Drawing the colored chessboard
 
+**TODO:**
 - [ ] Render and control clock timer
+
+**BUGS:**
+- [ ] Screen flickering
 
 
 --------------------
