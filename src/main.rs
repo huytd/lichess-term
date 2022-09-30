@@ -66,8 +66,8 @@ impl LichessApp {
         win.mv(BOARD_POSITION_Y, BOARD_POSITION_X + 16);
         win.vline('|', 9);
 
-        let title_w = player_w.title.as_ref().map(|x| x.as_str()).unwrap_or("");
-        let title_b = player_b.title.as_ref().map(|x| x.as_str()).unwrap_or("");
+        let title_w = player_w.title.as_deref().unwrap_or("");
+        let title_b = player_b.title.as_deref().unwrap_or("");
 
         win.mv(BOARD_POSITION_Y, BOARD_POSITION_X + 18);
         win.printw(format!("● {} {} ({})", &title_w, player_w.name, player_w.rate));
