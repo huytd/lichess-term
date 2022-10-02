@@ -2,6 +2,8 @@ mod ui;
 mod types;
 mod constants;
 
+use std::iter::repeat;
+
 use constants::{BOARD_POSITION_Y, BOARD_POSITION_X, MAX_INPUT_BUFFER_SIZE, THEME_BOARD_HINT, THEME_BOARD_CELL_WHITE_WHITE_PIECE, THEME_BOARD_CELL_WHITE_BLACK_PIECE, THEME_BOARD_CELL_BLACK_WHITE_PIECE, THEME_BOARD_CELL_BLACK_BLACK_PIECE, THEME_BOARD_TEXT_BLACK, THEME_BOARD_TEXT_WHITE};
 use owlchess::{board::Board, Coord, Color, Piece, Move};
 use pancurses::{Input, Window, init_pair, COLOR_PAIR, COLOR_WHITE, COLOR_BLACK, COLOR_YELLOW, init_color, COLOR_GREEN};
@@ -11,7 +13,8 @@ use ui::{run, App};
 pub struct LichessApp {
     input_buffer: String,
     input_win: Option<Window>,
-    board: Board
+    board: Board,
+    board_message: String
 }
 
 impl LichessApp {
@@ -19,8 +22,15 @@ impl LichessApp {
         Self {
             input_buffer: String::new(),
             input_win: None,
-            board: Board::initial()
+            board: Board::initial(),
+            board_message: String::new()
         }
+    }
+
+    fn draw_board_message(&self, win: &Window) {
+        win.attrset(COLOR_PAIR(THEME_BOARD_TEXT_WHITE));
+        win.mv(BOARD_POSITION_Y + 9, BOARD_POSITION_X); win.clrtoeol();
+        win.mvprintw(BOARD_POSITION_Y + 9, BOARD_POSITION_X, &self.board_message);
     }
 
     fn draw_input_box(&self) {
@@ -139,10 +149,13 @@ impl App for LichessApp {
         match input {
             // Enter
             Input::Character('\n') => {
+                self.board_message.clear();
                 if let Ok(parsed_move) = Move::from_san(&self.input_buffer, &self.board) {
                     if let Ok(new_board) = self.board.make_move(parsed_move) {
                         self.board = new_board;
                     }
+                } else {
+                    self.board_message = format!("{} is not a valid move!", self.input_buffer);
                 }
                 self.input_buffer.clear();
             }
@@ -162,6 +175,7 @@ impl App for LichessApp {
 
     fn render(&self, win: &Window) {
         self.draw_board(win, &self.board, BoardColor::White);
+        self.draw_board_message(win);
         self.draw_input_box();
         self.draw_player_info(win,
             &Player::new("huy", 2000, ""),
