@@ -20,6 +20,7 @@ I. UI Building
   the chessboard, not sure why.
 - [x] Render player's information
 - [x] Drawing the colored chessboard
+- [x] Use custom color for the board
 
 **TODO:**
 - [ ] Render and control clock timer

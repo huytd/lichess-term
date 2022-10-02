@@ -3,8 +3,8 @@ mod types;
 mod constants;
 
 use constants::{BOARD_POSITION_Y, BOARD_POSITION_X, MAX_INPUT_BUFFER_SIZE, THEME_BOARD_HINT, THEME_BOARD_CELL_WHITE_WHITE_PIECE, THEME_BOARD_CELL_WHITE_BLACK_PIECE, THEME_BOARD_CELL_BLACK_WHITE_PIECE, THEME_BOARD_CELL_BLACK_BLACK_PIECE, THEME_BOARD_TEXT_BLACK, THEME_BOARD_TEXT_WHITE};
-use owlchess::{board::Board, Coord, Color};
-use pancurses::{Input, Window, init_pair, COLOR_BLUE, COLOR_PAIR, COLOR_WHITE, COLOR_BLACK, COLOR_YELLOW, COLOR_RED};
+use owlchess::{board::Board, Coord, Color, Piece};
+use pancurses::{Input, Window, init_pair, COLOR_BLUE, COLOR_PAIR, COLOR_WHITE, COLOR_BLACK, COLOR_YELLOW, init_color, COLOR_GREEN};
 use types::{BoardColor, Player};
 use ui::{run, App};
 
@@ -63,7 +63,16 @@ impl LichessApp {
                 let i = (y * 8 + x) as usize;
 
                 let cell = board.get(Coord::from_index(i));
-                let cell_str = format!("{} ", if cell.is_occupied() { cell.as_utf8_char() } else { ' ' });
+                let piece_str = match cell.piece() {
+                    None => ' ',
+                    Some(Piece::Pawn) => '♟',
+                    Some(Piece::King) => '♚',
+                    Some(Piece::Knight) => '♞',
+                    Some(Piece::Bishop) => '♝',
+                    Some(Piece::Rook) => '♜',
+                    Some(Piece::Queen) => '♛'
+                };
+                let cell_str = format!("{} ", piece_str);
 
                 let piece_color = cell.color().unwrap_or(Color::White);
 
@@ -106,15 +115,20 @@ impl LichessApp {
 
 impl App for LichessApp {
     fn init(&mut self, win: &Window) {
-        init_pair(THEME_BOARD_HINT as i16, COLOR_BLUE, -1);
+        init_color(COLOR_BLACK, 70, 74, 94);
+        init_color(COLOR_WHITE, 1000, 1000, 1000);
+        init_color(COLOR_YELLOW, 509, 545, 721);
+        init_color(COLOR_GREEN, 258, 278, 368);
+
+        init_pair(THEME_BOARD_HINT as i16, COLOR_GREEN, -1);
         init_pair(THEME_BOARD_TEXT_WHITE as i16, COLOR_WHITE, -1);
         init_pair(THEME_BOARD_TEXT_BLACK as i16, COLOR_BLACK, -1);
 
-        init_pair(THEME_BOARD_CELL_WHITE_WHITE_PIECE as i16, COLOR_YELLOW, COLOR_WHITE);
-        init_pair(THEME_BOARD_CELL_WHITE_BLACK_PIECE as i16, COLOR_RED, COLOR_WHITE);
+        init_pair(THEME_BOARD_CELL_WHITE_WHITE_PIECE as i16, COLOR_WHITE, COLOR_YELLOW);
+        init_pair(THEME_BOARD_CELL_WHITE_BLACK_PIECE as i16, COLOR_BLACK, COLOR_YELLOW);
 
-        init_pair(THEME_BOARD_CELL_BLACK_WHITE_PIECE as i16, COLOR_YELLOW, COLOR_BLACK);
-        init_pair(THEME_BOARD_CELL_BLACK_BLACK_PIECE as i16, COLOR_RED, COLOR_BLACK);
+        init_pair(THEME_BOARD_CELL_BLACK_WHITE_PIECE as i16, COLOR_WHITE, COLOR_GREEN);
+        init_pair(THEME_BOARD_CELL_BLACK_BLACK_PIECE as i16, COLOR_BLACK, COLOR_GREEN);
 
         self.input_win = win.subwin(3, 20, 12, 0).ok();
     }

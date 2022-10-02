@@ -20,8 +20,8 @@ pub fn run(app: impl App, raw_mode: bool) {
     window.keypad(true);
 
     if has_colors() {
-        start_color();
         use_default_colors();
+        start_color();
     }
 
     app.init(&window);
