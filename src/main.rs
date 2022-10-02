@@ -3,14 +3,15 @@ mod types;
 mod constants;
 
 use constants::{BOARD_POSITION_Y, BOARD_POSITION_X, MAX_INPUT_BUFFER_SIZE, THEME_BOARD_HINT, THEME_BOARD_CELL_WHITE_WHITE_PIECE, THEME_BOARD_CELL_WHITE_BLACK_PIECE, THEME_BOARD_CELL_BLACK_WHITE_PIECE, THEME_BOARD_CELL_BLACK_BLACK_PIECE, THEME_BOARD_TEXT_BLACK, THEME_BOARD_TEXT_WHITE};
-use owlchess::{board::Board, Coord, Color, Piece};
-use pancurses::{Input, Window, init_pair, COLOR_BLUE, COLOR_PAIR, COLOR_WHITE, COLOR_BLACK, COLOR_YELLOW, init_color, COLOR_GREEN};
+use owlchess::{board::Board, Coord, Color, Piece, Move};
+use pancurses::{Input, Window, init_pair, COLOR_PAIR, COLOR_WHITE, COLOR_BLACK, COLOR_YELLOW, init_color, COLOR_GREEN};
 use types::{BoardColor, Player};
 use ui::{run, App};
 
 pub struct LichessApp {
     input_buffer: String,
     input_win: Option<Window>,
+    board: Board
 }
 
 impl LichessApp {
@@ -18,6 +19,7 @@ impl LichessApp {
         Self {
             input_buffer: String::new(),
             input_win: None,
+            board: Board::initial()
         }
     }
 
@@ -137,6 +139,11 @@ impl App for LichessApp {
         match input {
             // Enter
             Input::Character('\n') => {
+                if let Ok(parsed_move) = Move::from_san(&self.input_buffer, &self.board) {
+                    if let Ok(new_board) = self.board.make_move(parsed_move) {
+                        self.board = new_board;
+                    }
+                }
                 self.input_buffer.clear();
             }
             // Backspace
@@ -154,7 +161,7 @@ impl App for LichessApp {
     }
 
     fn render(&self, win: &Window) {
-        self.draw_board(win, &Board::initial(), BoardColor::Black);
+        self.draw_board(win, &self.board, BoardColor::White);
         self.draw_input_box();
         self.draw_player_info(win,
             &Player::new("huy", 2000, ""),
