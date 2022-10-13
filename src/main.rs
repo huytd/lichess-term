@@ -1,12 +1,18 @@
-mod ui;
-mod types;
 mod constants;
+mod types;
+mod ui;
 
-use std::iter::repeat;
-
-use constants::{BOARD_POSITION_Y, BOARD_POSITION_X, MAX_INPUT_BUFFER_SIZE, THEME_BOARD_HINT, THEME_BOARD_CELL_WHITE_WHITE_PIECE, THEME_BOARD_CELL_WHITE_BLACK_PIECE, THEME_BOARD_CELL_BLACK_WHITE_PIECE, THEME_BOARD_CELL_BLACK_BLACK_PIECE, THEME_BOARD_TEXT_BLACK, THEME_BOARD_TEXT_WHITE};
-use owlchess::{board::Board, Coord, Color, Piece, Move};
-use pancurses::{Input, Window, init_pair, COLOR_PAIR, COLOR_WHITE, COLOR_BLACK, COLOR_YELLOW, init_color, COLOR_GREEN};
+use constants::{
+    BOARD_POSITION_X, BOARD_POSITION_Y, MAX_INPUT_BUFFER_SIZE, THEME_BOARD_CELL_BLACK_BLACK_PIECE,
+    THEME_BOARD_CELL_BLACK_WHITE_PIECE, THEME_BOARD_CELL_WHITE_BLACK_PIECE,
+    THEME_BOARD_CELL_WHITE_WHITE_PIECE, THEME_BOARD_HINT, THEME_BOARD_TEXT_BLACK,
+    THEME_BOARD_TEXT_WHITE,
+};
+use owlchess::{board::Board, Color, Coord, Move, Piece};
+use pancurses::{
+    init_color, init_pair, Input, Window, COLOR_BLACK, COLOR_GREEN, COLOR_PAIR, COLOR_WHITE,
+    COLOR_YELLOW,
+};
 use types::{BoardColor, Player};
 use ui::{run, App};
 
@@ -14,7 +20,7 @@ pub struct LichessApp {
     input_buffer: String,
     input_win: Option<Window>,
     board: Board,
-    board_message: String
+    board_message: String,
 }
 
 impl LichessApp {
@@ -23,13 +29,14 @@ impl LichessApp {
             input_buffer: String::new(),
             input_win: None,
             board: Board::initial(),
-            board_message: String::new()
+            board_message: String::new(),
         }
     }
 
     fn draw_board_message(&self, win: &Window) {
         win.attrset(COLOR_PAIR(THEME_BOARD_TEXT_WHITE));
-        win.mv(BOARD_POSITION_Y + 9, BOARD_POSITION_X); win.clrtoeol();
+        win.mv(BOARD_POSITION_Y + 9, BOARD_POSITION_X);
+        win.clrtoeol();
         win.mvprintw(BOARD_POSITION_Y + 9, BOARD_POSITION_X, &self.board_message);
     }
 
@@ -56,17 +63,17 @@ impl LichessApp {
             } else {
                 i + 1
             };
-            win.mvprintw(i + BOARD_POSITION_Y, BOARD_POSITION_X - 2, format!("{}", rank));
+            win.mvprintw(
+                i + BOARD_POSITION_Y,
+                BOARD_POSITION_X - 2,
+                format!("{}", rank),
+            );
         }
 
         // Pieces
         for ry in 0..8 {
             for x in 0..8 {
-                let is_white_cell = if ry % 2 == 0 {
-                    x % 2 == 0
-                } else {
-                    x % 2 != 0
-                };
+                let is_white_cell = if ry % 2 == 0 { x % 2 == 0 } else { x % 2 != 0 };
 
                 let mut y = ry;
                 if player_side == BoardColor::Black {
@@ -82,7 +89,7 @@ impl LichessApp {
                     Some(Piece::Knight) => '♞',
                     Some(Piece::Bishop) => '♝',
                     Some(Piece::Rook) => '♜',
-                    Some(Piece::Queen) => '♛'
+                    Some(Piece::Queen) => '♛',
                 };
                 let cell_str = format!("{} ", piece_str);
 
@@ -102,11 +109,7 @@ impl LichessApp {
                     }
                 };
 
-                win.mvprintw(
-                    ry + BOARD_POSITION_Y,
-                    x * 2 + BOARD_POSITION_X,
-                    cell_str
-                );
+                win.mvprintw(ry + BOARD_POSITION_Y, x * 2 + BOARD_POSITION_X, cell_str);
             }
         }
     }
@@ -115,13 +118,28 @@ impl LichessApp {
         let title_w = player_w.title.as_deref().unwrap_or("");
         let title_b = player_b.title.as_deref().unwrap_or("");
 
+        // Player 1
         win.attrset(COLOR_PAIR(THEME_BOARD_TEXT_WHITE));
         win.mv(BOARD_POSITION_Y, BOARD_POSITION_X + 18);
-        win.printw(format!("● {} {} ({})", &title_w, player_w.name, player_w.rate));
+        win.printw("● ");
+        if title_w.len() > 0 {
+            win.printw(format!("{} ", &title_w));
+        }
+        win.printw(format!("{} ", player_w.name));
+        win.attrset(COLOR_PAIR(THEME_BOARD_HINT));
+        win.printw(format!("({})", player_w.rate));
 
+        // Player 2
         win.attrset(COLOR_PAIR(THEME_BOARD_TEXT_BLACK));
         win.mv(BOARD_POSITION_Y + 7, BOARD_POSITION_X + 18);
-        win.printw(format!("● {} {} ({})", &title_b, player_b.name, player_b.rate));
+        win.printw("● ");
+        win.attrset(COLOR_PAIR(THEME_BOARD_TEXT_WHITE));
+        if title_b.len() > 0 {
+            win.printw(format!("{} ", &title_b));
+        }
+        win.printw(format!("{} ", player_b.name));
+        win.attrset(COLOR_PAIR(THEME_BOARD_HINT));
+        win.printw(format!("({})", player_b.rate));
     }
 }
 
@@ -136,11 +154,27 @@ impl App for LichessApp {
         init_pair(THEME_BOARD_TEXT_WHITE as i16, COLOR_WHITE, -1);
         init_pair(THEME_BOARD_TEXT_BLACK as i16, COLOR_BLACK, -1);
 
-        init_pair(THEME_BOARD_CELL_WHITE_WHITE_PIECE as i16, COLOR_WHITE, COLOR_YELLOW);
-        init_pair(THEME_BOARD_CELL_WHITE_BLACK_PIECE as i16, COLOR_BLACK, COLOR_YELLOW);
+        init_pair(
+            THEME_BOARD_CELL_WHITE_WHITE_PIECE as i16,
+            COLOR_WHITE,
+            COLOR_YELLOW,
+        );
+        init_pair(
+            THEME_BOARD_CELL_WHITE_BLACK_PIECE as i16,
+            COLOR_BLACK,
+            COLOR_YELLOW,
+        );
 
-        init_pair(THEME_BOARD_CELL_BLACK_WHITE_PIECE as i16, COLOR_WHITE, COLOR_GREEN);
-        init_pair(THEME_BOARD_CELL_BLACK_BLACK_PIECE as i16, COLOR_BLACK, COLOR_GREEN);
+        init_pair(
+            THEME_BOARD_CELL_BLACK_WHITE_PIECE as i16,
+            COLOR_WHITE,
+            COLOR_GREEN,
+        );
+        init_pair(
+            THEME_BOARD_CELL_BLACK_BLACK_PIECE as i16,
+            COLOR_BLACK,
+            COLOR_GREEN,
+        );
 
         self.input_win = win.subwin(3, 20, 12, 0).ok();
     }
@@ -160,7 +194,7 @@ impl App for LichessApp {
                 self.input_buffer.clear();
             }
             // Backspace
-            Input::Character('\x7f') => {
+            Input::KeyBackspace => {
                 self.input_buffer.pop();
             }
             Input::Character(c) => {
@@ -177,7 +211,8 @@ impl App for LichessApp {
         self.draw_board(win, &self.board, BoardColor::White);
         self.draw_board_message(win);
         self.draw_input_box();
-        self.draw_player_info(win,
+        self.draw_player_info(
+            win,
             &Player::new("huy", 2000, ""),
             &Player::new("gmhuy", 3000, "GM"),
         );
