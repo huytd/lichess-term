@@ -7,7 +7,8 @@ pub enum BoardColor {
 pub struct Player {
     pub name: String,
     pub title: Option<String>,
-    pub rate: u32
+    pub rate: u32,
+    pub clock: u64
 }
 
 impl Player {
@@ -15,7 +16,8 @@ impl Player {
         Self {
             name: name.to_owned(),
             title: if title.is_empty() { None } else { Some(title.to_owned()) },
-            rate
+            rate,
+            clock: 180
         }
     }
 }

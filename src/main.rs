@@ -2,6 +2,8 @@ mod constants;
 mod types;
 mod ui;
 
+use std::time::{Instant, Duration};
+
 use constants::{
     BOARD_POSITION_X, BOARD_POSITION_Y, MAX_INPUT_BUFFER_SIZE, THEME_BOARD_CELL_BLACK_BLACK_PIECE,
     THEME_BOARD_CELL_BLACK_WHITE_PIECE, THEME_BOARD_CELL_WHITE_BLACK_PIECE,
@@ -11,7 +13,7 @@ use constants::{
 use owlchess::{board::Board, Color, Coord, Move, Piece};
 use pancurses::{
     init_color, init_pair, Input, Window, COLOR_BLACK, COLOR_GREEN, COLOR_PAIR, COLOR_WHITE,
-    COLOR_YELLOW,
+    COLOR_YELLOW, A_STANDOUT, A_NORMAL,
 };
 use types::{BoardColor, Player};
 use ui::{run, App};
@@ -19,8 +21,11 @@ use ui::{run, App};
 pub struct LichessApp {
     input_buffer: String,
     input_win: Option<Window>,
+    player_side: BoardColor,
     board: Board,
     board_message: String,
+    players: (Player, Player),
+    last_tick: Instant
 }
 
 impl LichessApp {
@@ -28,8 +33,14 @@ impl LichessApp {
         Self {
             input_buffer: String::new(),
             input_win: None,
+            player_side: BoardColor::White,
             board: Board::initial(),
             board_message: String::new(),
+            players: (
+                Player::new("huy", 2400, ""),
+                Player::new("huygm", 3000, "GM"),
+            ),
+            last_tick: Instant::now()
         }
     }
 
@@ -49,16 +60,19 @@ impl LichessApp {
         }
     }
 
-    fn draw_board(&self, win: &Window, board: &Board, player_side: BoardColor) {
+    fn draw_board(&self, win: &Window) {
+        let player_side = &self.player_side;
+        let board = &self.board;
+
         // Board hint
         win.attrset(COLOR_PAIR(THEME_BOARD_HINT));
-        if player_side == BoardColor::White {
+        if *player_side == BoardColor::White {
             win.mvprintw(BOARD_POSITION_Y + 8, BOARD_POSITION_X, "a b c d e f g h");
         } else {
             win.mvprintw(BOARD_POSITION_Y + 8, BOARD_POSITION_X, "h g f e d c b a");
         }
         for i in 0..8 {
-            let rank = if player_side == BoardColor::White {
+            let rank = if *player_side == BoardColor::White {
                 8 - i
             } else {
                 i + 1
@@ -76,7 +90,7 @@ impl LichessApp {
                 let is_white_cell = if ry % 2 == 0 { x % 2 == 0 } else { x % 2 != 0 };
 
                 let mut y = ry;
-                if player_side == BoardColor::Black {
+                if *player_side == BoardColor::Black {
                     y = 8 - ry - 1;
                 }
                 let i = (y * 8 + x) as usize;
@@ -114,7 +128,9 @@ impl LichessApp {
         }
     }
 
-    fn draw_player_info(&self, win: &Window, player_w: &Player, player_b: &Player) {
+    fn draw_player_info(&self, win: &Window) {
+        let (player_w, player_b) = &self.players;
+
         let title_w = player_w.title.as_deref().unwrap_or("");
         let title_b = player_b.title.as_deref().unwrap_or("");
 
@@ -141,9 +157,57 @@ impl LichessApp {
         win.attrset(COLOR_PAIR(THEME_BOARD_HINT));
         win.printw(format!("({})", player_b.rate));
     }
+
+    fn draw_player_clock(&self, win: &Window, clock: u64, color: Color) {
+        win.attrset(COLOR_PAIR(THEME_BOARD_TEXT_WHITE));
+
+        if self.board.side() == color {
+            win.attrset(A_STANDOUT);
+        } else {
+            win.attrset(A_NORMAL);
+        }
+
+        let min = clock / 60;
+        let sec = clock % 60;
+
+        win.printw(format!("{:02}:{:02}", min, sec));
+    }
+
+    fn draw_clock(&self, win: &Window) {
+        let (player_w, player_b) = &self.players;
+        let player_side = &self.player_side;
+
+        if *player_side == BoardColor::White {
+            win.mv(BOARD_POSITION_Y + 1, BOARD_POSITION_X + 18);
+            self.draw_player_clock(win, player_b.clock, Color::Black);
+            win.mv(BOARD_POSITION_Y + 8, BOARD_POSITION_X + 18);
+            self.draw_player_clock(win, player_w.clock, Color::White);
+        } else {
+            win.mv(BOARD_POSITION_Y + 1, BOARD_POSITION_X + 18);
+            self.draw_player_clock(win, player_w.clock, Color::White);
+            win.mv(BOARD_POSITION_Y + 8, BOARD_POSITION_X + 18);
+            self.draw_player_clock(win, player_b.clock, Color::Black);
+        }
+    }
 }
 
 impl App for LichessApp {
+    fn update(&mut self, _win: &Window) {
+        let now = Instant::now();
+        if now.duration_since(self.last_tick) >= Duration::from_secs(1) {
+            if self.board.side() == Color::White {
+                if self.players.0.clock > 0 {
+                    self.players.0.clock -= 1;
+                }
+            } else {
+                if self.players.1.clock > 0 {
+                    self.players.1.clock -= 1;
+                }
+            }
+            self.last_tick = now;
+        }
+    }
+
     fn init(&mut self, win: &Window) {
         init_color(COLOR_BLACK, 70, 74, 94);
         init_color(COLOR_WHITE, 1000, 1000, 1000);
@@ -179,7 +243,7 @@ impl App for LichessApp {
         self.input_win = win.subwin(3, 20, 12, 0).ok();
     }
 
-    fn update(&mut self, input: Input, _win: &Window) -> bool {
+    fn input(&mut self, input: Input, _win: &Window) -> bool {
         match input {
             // Enter
             Input::Character('\n') => {
@@ -208,14 +272,11 @@ impl App for LichessApp {
     }
 
     fn render(&self, win: &Window) {
-        self.draw_board(win, &self.board, BoardColor::White);
+        self.draw_board(win);
         self.draw_board_message(win);
         self.draw_input_box();
-        self.draw_player_info(
-            win,
-            &Player::new("huy", 2000, ""),
-            &Player::new("gmhuy", 3000, "GM"),
-        );
+        self.draw_player_info(win);
+        self.draw_clock(win);
     }
 }
 

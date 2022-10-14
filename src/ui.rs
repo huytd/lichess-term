@@ -1,8 +1,12 @@
-use pancurses::{endwin, half_delay, initscr, noecho, raw, Input, Window, curs_set, has_colors, start_color, use_default_colors};
+use pancurses::{
+    curs_set, endwin, half_delay, has_colors, initscr, noecho, raw, start_color,
+    use_default_colors, Input, Window,
+};
 
 pub trait App {
     fn init(&mut self, win: &Window);
-    fn update(&mut self, input: Input, win: &Window) -> bool;
+    fn update(&mut self, win: &Window);
+    fn input(&mut self, input: Input, win: &Window) -> bool;
     fn render(&self, win: &Window);
 }
 
@@ -27,11 +31,11 @@ pub fn run(app: impl App, raw_mode: bool) {
     app.init(&window);
 
     loop {
+        app.update(&window);
         app.render(&window);
-
         match window.getch() {
             Some(input) => {
-                if !app.update(input, &window) {
+                if !app.input(input, &window) {
                     break;
                 }
             }
